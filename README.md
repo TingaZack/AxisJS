@@ -183,17 +183,6 @@ Please ensure all tests pass and file paths remain modularized before submitting
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-````
+```
 
-***
-
-### Push the Fix Up!
-
-Once you save the clean file, push the update to GitHub:
-
-```bash
-git add README.md
-git commit -m "docs: clean up markdown formatting syntax and fix rendering"
-git push
-
-````
+```
