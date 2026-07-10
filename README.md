@@ -1,11 +1,3 @@
-Ah, the classic copy-paste trap! 🕸️
-
-You accidentally included my conversational conversational intro text and the triple backtick fences (`markdown ... `) inside your actual `README.md` file. Because of those backticks at the top, GitHub is displaying your entire README inside a literal code box instead of parsing it into a real, beautiful webpage.
-
-Let's fix this right now. Open your **`README.md`**, erase **everything** currently inside it, and paste this exact text block. Make sure there are no backticks on line 1!
-
----
-
 ````markdown
 # AxisJS 📐
 
