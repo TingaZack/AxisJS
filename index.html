@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>axisjs</title>
+    <style>
+      /* Ensure the canvas takes up the entire window without scrolling */
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #f8f9fa;
+      }
+      #plane-canvas {
+        width: 100vw;
+        height: 100vh;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- The mount point for AxisJS -->
+    <canvas id="plane-canvas"></canvas>
+
+    <!-- Entry script pointing to your main TypeScript file -->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

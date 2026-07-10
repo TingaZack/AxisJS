@@ -1,0 +1,42 @@
+{
+  "name": "axisjs",
+  "version": "0.1.0",
+  "description": "A zero-dependency, high-performance interactive Cartesian plane for HTML5 Canvas. Features smooth pan/zoom, intelligent grid scaling, and mathematical function plotting for educational software.",
+  "type": "module",
+  "main": "./dist/axisjs.umd.js",
+  "module": "./dist/axisjs.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/axisjs.es.js",
+      "require": "./dist/axisjs.umd.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "test": "vitest"
+  },
+  "keywords": [
+    "math",
+    "canvas",
+    "cartesian",
+    "graph",
+    "plot",
+    "animation"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.13.2",
+    "eslint": "^10.6.0",
+    "globals": "^17.7.0",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.62.0",
+    "vite": "^8.1.1",
+    "vitest": "^3.0.0"
+  }
+}
