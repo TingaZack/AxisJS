@@ -1,4 +1,3 @@
-````markdown
 # AxisJS 📐
 
 ![AxisJS Demo](./src/assets/AxisJS.gif)
@@ -11,15 +10,15 @@ AxisJS handles infinite panning, smooth adaptive scaling, high-DPI (Retina) disp
 
 ## ✨ Features
 
-- ** High-Performance Rendering:** Built using a custom vanilla rendering engine that utilizes viewport culling, canvas path batching, and reactive loops (`isDirty` flag optimization). Handles complex functions smoothly at 60fps.
-- ** Textbook Aesthetic:** Automatically draws sharp physical axis tick marks, coordinate system direction arrows, and mathematical axis alignment labels.
-- ** Strictly Typed:** Built entirely in TypeScript with native, fully exported type interfaces for all plotting entities, coordinates, and configurations.
-- ** Diverse Drawing Toolkit:**
+- **High-Performance Rendering:** Built using a custom vanilla rendering engine that utilizes viewport culling, canvas path batching, and reactive loops (`isDirty` flag optimization). Handles complex functions smoothly at 60fps.
+- **Textbook Aesthetic:** Automatically draws sharp physical axis tick marks, coordinate system direction arrows, and mathematical axis alignment labels.
+- **Strictly Typed:** Built entirely in TypeScript with native, fully exported type interfaces for all plotting entities, coordinates, and configurations.
+- **Diverse Drawing Toolkit:**
   - **Points & Labels:** Plot absolute coordinates with floating text annotations and optional dashed projection guidelines extending to the axes.
   - **Line Segments:** Connect custom coordinates directly with variable thickness and custom styling.
   - **Filled Polygons:** Render geometric areas like triangles, rectangles, or custom calculus bounds with semi-transparent fills.
   - **Continuous Math Functions:** Plot infinite curve equations safely, featuring automatic asymptote gap and discontinuity detection (e.g., curves like `y = tan(x)` or $f(x) = \frac{1}{x}$).
-- ** Responsive & Interactive:** Full mouse drag-to-pan and wheel-to-zoom interactive logic with an elegant single-method implementation for layout resizing.
+- **Responsive & Interactive:** Full mouse drag-to-pan and wheel-to-zoom interactive logic with an elegant single-method implementation for layout resizing.
 
 ---
 
@@ -30,7 +29,14 @@ Install AxisJS into your project via npm, yarn, or pnpm:
 ```bash
 npm install axisjs
 ```
-````
+
+```bash
+yarn add axisjs
+```
+
+```bash
+pnpm add axisjs
+```
 
 ---
 
@@ -182,7 +188,3 @@ Please ensure all tests pass and file paths remain modularized before submitting
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-```
-
-```
