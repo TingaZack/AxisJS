@@ -1,23 +1,29 @@
 {
-  "name": "axisjs",
+  "name": "Zack Tinga",
   "version": "0.1.0",
   "description": "A zero-dependency, high-performance interactive Cartesian plane for HTML5 Canvas. Features smooth pan/zoom, intelligent grid scaling, and mathematical function plotting for educational software.",
   "type": "module",
   "main": "./dist/axisjs.umd.js",
   "module": "./dist/axisjs.es.js",
   "types": "./dist/index.d.ts",
+  "sideEffects": false,
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/axisjs.es.js",
       "require": "./dist/axisjs.umd.js"
     }
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "math",
@@ -25,10 +31,23 @@
     "cartesian",
     "graph",
     "plot",
-    "animation"
+    "animation",
+    "typescript",
+    "data-visualization"
   ],
-  "author": "Your Name",
+  "author": "Your Name <you@example.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourname/axisjs.git"
+  },
+  "homepage": "https://github.com/yourname/axisjs#readme",
+  "bugs": {
+    "url": "https://github.com/yourname/axisjs/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.13.2",

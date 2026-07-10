@@ -8,7 +8,7 @@ AxisJS handles infinite panning, smooth adaptive scaling, high-DPI (Retina) disp
 
 ---
 
-## ✨ Features
+## Features
 
 - **High-Performance Rendering:** Built using a custom vanilla rendering engine that utilizes viewport culling, canvas path batching, and reactive loops (`isDirty` flag optimization). Handles complex functions smoothly at 60fps.
 - **Textbook Aesthetic:** Automatically draws sharp physical axis tick marks, coordinate system direction arrows, and mathematical axis alignment labels.
