@@ -1,5 +1,6 @@
 {
-  "name": "Zack Tinga",
+  "name": "axisjs",              
+  "author": "Zack Tinga", 
   "version": "0.1.0",
   "description": "A zero-dependency, high-performance interactive Cartesian plane for HTML5 Canvas. Features smooth pan/zoom, intelligent grid scaling, and mathematical function plotting for educational software.",
   "type": "module",
