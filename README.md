@@ -7,7 +7,7 @@ Here is your fully updated, industry-standard **`README.md`** incorporating all 
 ````markdown
 # AxisJS 📐
 
-![AxisJS Demo](./assets/demo-preview.gif)
+![AxisJS Demo](./src/assets/AxisJS.gif)
 
 A zero-dependency, high-performance interactive Cartesian coordinate plane for the web. Designed to produce a clean, classic "math textbook" aesthetic using HTML5 Canvas and TypeScript.
 
