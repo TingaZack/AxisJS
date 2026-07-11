@@ -52,7 +52,6 @@ export class CartesianPlane {
     // Scale for high-DPI displays (Retina screens)
     this.setupCanvasResolution();
 
-    // Pass logical dimensions to Viewport to prevent coordinate stretching
     this.viewport = new Viewport(
       this.canvas.clientWidth,
       this.canvas.clientHeight,
@@ -64,11 +63,9 @@ export class CartesianPlane {
     this.axisRenderer = new AxisRenderer();
     this.plotRenderer = new PlotRenderer();
 
-    // Defaults to true — set { autoFit: false } in config to opt out
     this.autoFit = config.autoFit ?? true;
 
     this.inputController.onInteraction = () => {
-      // Intercept and break programmatic animations if the user manually pans or zooms
       this.isAnimatingToFit = false;
       this.isDirty = true;
     };
@@ -78,15 +75,16 @@ export class CartesianPlane {
 
   private setupCanvasResolution() {
     const dpr = window.devicePixelRatio || 1;
-    const rect = this.canvas.getBoundingClientRect();
+
+    const parent = this.canvas.parentElement || this.canvas;
+    const rect = parent.getBoundingClientRect();
 
     this.canvas.width = rect.width * dpr;
     this.canvas.height = rect.height * dpr;
-    this.canvas.style.width = `${rect.width}px`;
-    this.canvas.style.height = `${rect.height}px`;
 
-    // Scale the context. Because canvas.width was just set, the context resets,
-    // so calling scale() here is safe and does NOT compound across resizes.
+    this.canvas.style.width = "100%";
+    this.canvas.style.height = "100%";
+
     this.ctx.scale(dpr, dpr);
   }
 
@@ -96,7 +94,20 @@ export class CartesianPlane {
    */
   public resize() {
     this.setupCanvasResolution();
-    // Do NOT reset offsets here. Let the user's current pan remain intact.
+
+    const w = this.canvas.clientWidth;
+    const h = this.canvas.clientHeight;
+
+    const v = this.viewport as any;
+    if (typeof v.resize === "function") {
+      v.resize(w, h);
+    } else {
+      if ("width" in v) v.width = w;
+      if ("height" in v) v.height = h;
+      if ("_width" in v) v._width = w;
+      if ("_height" in v) v._height = h;
+    }
+
     this.isDirty = true;
   }
 
@@ -155,9 +166,6 @@ export class CartesianPlane {
   /**
    * Computes the bounding coordinates of target metrics and glides the canvas layout
    * smoothly to encompass all targets with natural, responsive breathing space padding.
-   *
-   * @param coords Optional custom point arrays. Defaults to all internal plotted entities.
-   * @param duration Transition runtime in milliseconds. Defaults to 750ms.
    */
   public animateToFit(
     coords?: { x: number; y: number }[],
@@ -169,7 +177,6 @@ export class CartesianPlane {
     const canvasWidth = this.canvas.clientWidth;
     const canvasHeight = this.canvas.clientHeight;
 
-    // 🚀 SAFETY SHIELD: If app is launching cold and layout dims are 0, defer to next paint frame
     if (canvasWidth === 0 || canvasHeight === 0) {
       if (!this.fitScheduled) {
         this.fitScheduled = true;
@@ -193,7 +200,6 @@ export class CartesianPlane {
       maxY = Math.max(maxY, p.y);
     });
 
-    // Provide safe dimension boundaries if processing a singular coordinate node
     if (minX === maxX) {
       minX -= 4;
       maxX += 4;
@@ -206,27 +212,24 @@ export class CartesianPlane {
     const worldWidth = maxX - minX;
     const worldHeight = maxY - minY;
 
-    // Define structural safety margins (22.5% uniform inner window padding offset)
     const paddingMultiplier = 0.225;
     const availableWidth = canvasWidth * (1 - paddingMultiplier * 2);
     const availableHeight = canvasHeight * (1 - paddingMultiplier * 2);
 
-    // Map strict ratio scale locks
     const scaleX = availableWidth / worldWidth;
     const scaleY = availableHeight / worldHeight;
 
-    // ENFORCE MIN/MAX SCALE LIMITS (e.g., 1 to 5000) to prevent crashing on micro-coordinates
-    this.fitTargetScale = Math.max(1, Math.min(Math.min(scaleX, scaleY), 5000));
+    this.fitTargetScale = Math.max(
+      0.0001,
+      Math.min(Math.min(scaleX, scaleY), 5000),
+    );
 
-    // Extract exact coordinate target centers
     const midWorldX = (minX + maxX) / 2;
     const midWorldY = (minY + maxY) / 2;
 
-    // Calculate alignment projections across viewport offsets
     this.fitTargetOffsetX = canvasWidth / 2 - midWorldX * this.fitTargetScale;
     this.fitTargetOffsetY = canvasHeight / 2 + midWorldY * this.fitTargetScale;
 
-    // Snapshot animation state origins
     this.fitStartScale = this.viewport.scale;
     this.fitStartOffsetX = this.viewport.offsetX;
     this.fitStartOffsetY = this.viewport.offsetY;
@@ -254,7 +257,6 @@ export class CartesianPlane {
   public addCurve(fn: (x: number) => number, color?: string) {
     this.curves.push(new FunctionCurve(fn, color));
     this.isDirty = true;
-    // Curves represent infinite functions and don't trigger auto-fit bounds
   }
 
   public addLine(
@@ -301,11 +303,9 @@ export class CartesianPlane {
     const majorStep = this.scaleManager.getOptimalStep(this.viewport.scale);
     const minorStep = this.scaleManager.getMinorStep(majorStep);
 
-    // Draw base grid layers
     this.gridRenderer.draw(renderContext, majorStep, minorStep);
     this.axisRenderer.draw(renderContext, majorStep);
 
-    // Draw data layers (bottom to top)
     this.plotRenderer.drawPolygons(renderContext, this.polygons);
     this.plotRenderer.drawSegments(renderContext, this.segments);
     this.plotRenderer.drawCurves(renderContext, this.curves);
@@ -317,12 +317,9 @@ export class CartesianPlane {
       const timestamp = now ?? performance.now();
       let needsRender = this.isDirty;
 
-      // Handle active Auto-Fit smooth coordinate animation updates
       if (this.isAnimatingToFit) {
         const elapsed = timestamp - this.fitStartTime;
         const progress = Math.min(elapsed / this.fitDuration, 1);
-
-        // Smooth Cubic Ease Out calculation mapping: 1 - (1 - x)^3
         const easeOutFactor = 1 - Math.pow(1 - progress, 3);
 
         this.viewport.scale =
@@ -340,8 +337,10 @@ export class CartesianPlane {
         if (progress >= 1) {
           this.isAnimatingToFit = false;
 
-          // CRITICAL FIX: Sync Viewport targets so manual panning resumes from the new location!
-          // AND so the Viewport.update() doesn't snap the camera back to scale 50!
+          this.viewport.scale = this.fitTargetScale;
+          this.viewport.offsetX = this.fitTargetOffsetX;
+          this.viewport.offsetY = this.fitTargetOffsetY;
+
           this.viewport.setTarget(
             this.fitTargetScale,
             this.fitTargetOffsetX,
@@ -350,7 +349,6 @@ export class CartesianPlane {
         }
       }
 
-      // Update viewport easing ONLY if we are not overriding it with animateToFit
       let isAnimating = false;
       if (!this.isAnimatingToFit) {
         isAnimating = this.viewport.update();
@@ -363,7 +361,7 @@ export class CartesianPlane {
 
       this.animationFrameId = requestAnimationFrame(loop);
     };
-    loop();
+    this.animationFrameId = requestAnimationFrame(loop);
   }
 
   public destroy() {
