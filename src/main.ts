@@ -37,7 +37,7 @@ plane.addLine(0, 0, 4, -4, "#feca57", 3);
 // 6. Plot Points of Interest (with labels and dashed guides)
 plane.addPoint(0, 0, "#ff4757", "Origin");
 plane.addPoint(-3, 2, "blue", "(-3, 2)", true); // Point with dashed guide matching your image!
-plane.addPoint(4, -4, "#feca57", "A(4, -4)", false);
+plane.addPoint(4, -90, "#feca57", "A(4, -4)", false);
 
 // 7. Handle Window Resizing gracefully
 const resizeObserver = new ResizeObserver(() => {

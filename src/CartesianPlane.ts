@@ -30,7 +30,7 @@ export class CartesianPlane {
   private segments: LineSegment[] = [];
   private polygons: Polygon[] = [];
 
-  // Smooth Viewport Transition Mechanics
+  // Smooth Viewport Transition Mechanics (for animateToFit)
   private isAnimatingToFit = false;
   private fitStartTime = 0;
   private fitDuration = 0;
@@ -52,6 +52,7 @@ export class CartesianPlane {
     // Scale for high-DPI displays (Retina screens)
     this.setupCanvasResolution();
 
+    // Pass logical dimensions to Viewport to prevent coordinate stretching
     this.viewport = new Viewport(
       this.canvas.clientWidth,
       this.canvas.clientHeight,
@@ -78,8 +79,14 @@ export class CartesianPlane {
   private setupCanvasResolution() {
     const dpr = window.devicePixelRatio || 1;
     const rect = this.canvas.getBoundingClientRect();
+
     this.canvas.width = rect.width * dpr;
     this.canvas.height = rect.height * dpr;
+    this.canvas.style.width = `${rect.width}px`;
+    this.canvas.style.height = `${rect.height}px`;
+
+    // Scale the context. Because canvas.width was just set, the context resets,
+    // so calling scale() here is safe and does NOT compound across resizes.
     this.ctx.scale(dpr, dpr);
   }
 
@@ -89,9 +96,18 @@ export class CartesianPlane {
    */
   public resize() {
     this.setupCanvasResolution();
-    // Update viewport dimensions to match the new canvas size
-    this.viewport.offsetX = this.canvas.clientWidth / 2;
-    this.viewport.offsetY = this.canvas.clientHeight / 2;
+    // Do NOT reset offsets here. Let the user's current pan remain intact.
+    this.isDirty = true;
+  }
+
+  /**
+   * Clears all plotted entities (points, curves, shapes) from the plane.
+   */
+  public clear() {
+    this.points = [];
+    this.curves = [];
+    this.segments = [];
+    this.polygons = [];
     this.isDirty = true;
   }
 
@@ -153,7 +169,7 @@ export class CartesianPlane {
     const canvasWidth = this.canvas.clientWidth;
     const canvasHeight = this.canvas.clientHeight;
 
-    // If app is launching cold and layout dims are 0, defer to next paint frame
+    // 🚀 SAFETY SHIELD: If app is launching cold and layout dims are 0, defer to next paint frame
     if (canvasWidth === 0 || canvasHeight === 0) {
       if (!this.fitScheduled) {
         this.fitScheduled = true;
@@ -198,7 +214,9 @@ export class CartesianPlane {
     // Map strict ratio scale locks
     const scaleX = availableWidth / worldWidth;
     const scaleY = availableHeight / worldHeight;
-    this.fitTargetScale = Math.min(scaleX, scaleY);
+
+    // ENFORCE MIN/MAX SCALE LIMITS (e.g., 1 to 5000) to prevent crashing on micro-coordinates
+    this.fitTargetScale = Math.max(1, Math.min(Math.min(scaleX, scaleY), 5000));
 
     // Extract exact coordinate target centers
     const midWorldX = (minX + maxX) / 2;
@@ -321,11 +339,18 @@ export class CartesianPlane {
 
         if (progress >= 1) {
           this.isAnimatingToFit = false;
+          // CRITICAL FIX: Sync Viewport targets so manual panning resumes from the new location!
+          this.viewport.scale = this.fitTargetScale;
+          this.viewport.offsetX = this.fitTargetOffsetX;
+          this.viewport.offsetY = this.fitTargetOffsetY;
         }
       }
 
-      // Update viewport easing. If it returns true, we are currently animating.
-      const isAnimating = this.viewport.update();
+      // CRITICAL FIX: Update viewport easing ONLY if we are not overriding it with animateToFit
+      let isAnimating = false;
+      if (!this.isAnimatingToFit) {
+        isAnimating = this.viewport.update();
+      }
 
       if (needsRender || isAnimating) {
         this.render();
