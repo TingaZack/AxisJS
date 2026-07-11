@@ -339,14 +339,18 @@ export class CartesianPlane {
 
         if (progress >= 1) {
           this.isAnimatingToFit = false;
+
           // CRITICAL FIX: Sync Viewport targets so manual panning resumes from the new location!
-          this.viewport.scale = this.fitTargetScale;
-          this.viewport.offsetX = this.fitTargetOffsetX;
-          this.viewport.offsetY = this.fitTargetOffsetY;
+          // AND so the Viewport.update() doesn't snap the camera back to scale 50!
+          this.viewport.setTarget(
+            this.fitTargetScale,
+            this.fitTargetOffsetX,
+            this.fitTargetOffsetY,
+          );
         }
       }
 
-      // CRITICAL FIX: Update viewport easing ONLY if we are not overriding it with animateToFit
+      // Update viewport easing ONLY if we are not overriding it with animateToFit
       let isAnimating = false;
       if (!this.isAnimatingToFit) {
         isAnimating = this.viewport.update();

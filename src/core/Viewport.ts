@@ -42,19 +42,26 @@ export class Viewport {
     const [worldX, worldY] = this.screenToWorld(screenX, screenY);
 
     this.targetScale *= factor;
-    // Limit zoom out/in
     this.targetScale = Math.max(1, Math.min(this.targetScale, 5000));
 
-    // Adjust offsets so we zoom into the mouse cursor
     this.targetOffsetX = screenX - worldX * this.targetScale;
     this.targetOffsetY = screenY + worldY * this.targetScale;
   }
 
+  /**
+   * NEW: Allows external controllers (like animateToFit) to update the
+   * internal targets so the viewport doesn't fight the programmatic animation.
+   */
+  public setTarget(scale: number, offsetX: number, offsetY: number) {
+    this.targetScale = scale;
+    this.targetOffsetX = offsetX;
+    this.targetOffsetY = offsetY;
+  }
+
   public update(): boolean {
     let isAnimating = false;
-    const lerpSpeed = 0.2; // Easing speed
+    const lerpSpeed = 0.2;
 
-    // Simple interpolation (lerp)
     if (Math.abs(this.scale - this.targetScale) > 0.01) {
       this.scale += (this.targetScale - this.scale) * lerpSpeed;
       isAnimating = true;
