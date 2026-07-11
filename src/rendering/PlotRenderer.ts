@@ -1,6 +1,6 @@
-import { Point } from "../entities/Point";
-import { FunctionCurve } from "../entities/FunctionCurve";
 import type { RenderContext } from "../types";
+import type { Point } from "../entities/Point";
+import type { FunctionCurve } from "../entities/FunctionCurve";
 import type { LineSegment } from "../entities/LineSegment";
 import type { Polygon } from "../entities/Polygon";
 
@@ -12,78 +12,36 @@ export class PlotRenderer {
     points.forEach((point) => {
       const [sx, sy] = viewport.worldToScreen(point.x, point.y);
 
-      // Draw Dashed Guides if requested
       if (point.showGuides) {
         ctx.save();
-        ctx.setLineDash([5, 5]); // 5px dash, 5px space
+        ctx.setLineDash([5, 5]);
         ctx.strokeStyle = point.color;
         ctx.lineWidth = 1;
         ctx.globalAlpha = 0.5;
-
         ctx.beginPath();
         ctx.moveTo(sx, sy);
-        ctx.lineTo(sx, originY); // Line to X axis
+        ctx.lineTo(sx, originY);
         ctx.moveTo(sx, sy);
-        ctx.lineTo(originX, sy); // Line to Y axis
+        ctx.lineTo(originX, sy);
         ctx.stroke();
-        ctx.restore(); // Clear the dash setting
+        ctx.restore();
       }
 
-      // Draw the point
       ctx.fillStyle = point.color;
       ctx.beginPath();
-      ctx.arc(sx, sy, 5, 0, Math.PI * 2);
+      // Dynamically rendered based on custom or fallback point radius configuration
+      ctx.arc(sx, sy, point.radius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw the floating label if it exists
       if (point.label) {
+        // Automatically scales offset buffers proportionally to prevent coordinate textual overlapping
+        const offset = point.radius + 3;
         ctx.fillStyle = "#333333";
         ctx.font = "14px sans-serif";
         ctx.textAlign = "left";
         ctx.textBaseline = "bottom";
-        // Offset the text slightly up and to the right of the point
-        ctx.fillText(point.label, sx + 8, sy - 8);
+        ctx.fillText(point.label, sx + offset, sy - offset);
       }
-    });
-  }
-
-  public drawPolygons(context: RenderContext, polygons: Polygon[]) {
-    const { ctx, viewport } = context;
-
-    polygons.forEach((poly) => {
-      if (poly.points.length < 3) return; // Need at least 3 points for a shape
-
-      ctx.fillStyle = poly.fillColor;
-      ctx.strokeStyle = poly.strokeColor;
-      ctx.lineWidth = poly.thickness;
-      ctx.beginPath();
-
-      poly.points.forEach((p, index) => {
-        const [sx, sy] = viewport.worldToScreen(p.x, p.y);
-        if (index === 0) ctx.moveTo(sx, sy);
-        else ctx.lineTo(sx, sy);
-      });
-
-      ctx.closePath();
-      if (poly.fillColor !== "transparent") ctx.fill();
-      ctx.stroke();
-    });
-  }
-
-  public drawSegments(context: RenderContext, segments: LineSegment[]) {
-    const { ctx, viewport } = context;
-
-    segments.forEach((segment) => {
-      const [sx1, sy1] = viewport.worldToScreen(segment.x1, segment.y1);
-      const [sx2, sy2] = viewport.worldToScreen(segment.x2, segment.y2);
-
-      ctx.strokeStyle = segment.color;
-      ctx.lineWidth = segment.thickness;
-
-      ctx.beginPath();
-      ctx.moveTo(sx1, sy1);
-      ctx.lineTo(sx2, sy2);
-      ctx.stroke();
     });
   }
 
@@ -91,8 +49,10 @@ export class PlotRenderer {
     const { ctx, viewport, canvasWidth, canvasHeight } = context;
 
     curves.forEach((curve) => {
+      ctx.save();
       ctx.strokeStyle = curve.color;
-      ctx.lineWidth = 2;
+      // Applies custom line path weights directly from signature definitions
+      ctx.lineWidth = curve.thickness;
       ctx.beginPath();
 
       let prevPy = 0;
@@ -111,6 +71,57 @@ export class PlotRenderer {
         prevPy = py;
       }
       ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  public drawSegments(context: RenderContext, segments: LineSegment[]) {
+    const { ctx, viewport } = context;
+    segments.forEach((s) => {
+      const [sx1, sy1] = viewport.worldToScreen(s.x1, s.y1);
+      const [sx2, sy2] = viewport.worldToScreen(s.x2, s.y2);
+      ctx.save();
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = s.thickness;
+      ctx.beginPath();
+      ctx.moveTo(sx1, sy1);
+      ctx.lineTo(sx2, sy2);
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  public drawPolygons(context: RenderContext, polygons: Polygon[]) {
+    const { ctx, viewport } = context;
+    polygons.forEach((poly) => {
+      if (poly.points.length < 2) return;
+      ctx.save();
+      ctx.beginPath();
+      const [startSx, startSy] = viewport.worldToScreen(
+        poly.points[0].x,
+        poly.points[0].y,
+      );
+      ctx.moveTo(startSx, startSy);
+
+      for (let i = 1; i < poly.points.length; i++) {
+        const [sx, sy] = viewport.worldToScreen(
+          poly.points[i].x,
+          poly.points[i].y,
+        );
+        ctx.lineTo(sx, sy);
+      }
+      ctx.closePath();
+
+      if (poly.fillColor) {
+        ctx.fillStyle = poly.fillColor;
+        ctx.fill();
+      }
+      if (poly.strokeColor) {
+        ctx.strokeStyle = poly.strokeColor;
+        ctx.lineWidth = poly.thickness;
+        ctx.stroke();
+      }
+      ctx.restore();
     });
   }
 }

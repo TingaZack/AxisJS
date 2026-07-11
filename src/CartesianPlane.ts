@@ -248,14 +248,19 @@ export class CartesianPlane {
     color?: string,
     label?: string,
     showGuides: boolean = false,
+    radius?: number, // 🚀 Added customizable size
   ) {
-    this.points.push(new Point(x, y, color, label, showGuides));
+    this.points.push(new Point(x, y, color, label, showGuides, radius));
     this.isDirty = true;
     this.scheduleAutoFit();
   }
 
-  public addCurve(fn: (x: number) => number, color?: string) {
-    this.curves.push(new FunctionCurve(fn, color));
+  public addCurve(
+    fn: (x: number) => number,
+    color?: string,
+    thickness?: number, // 🚀 Added customizable thickness
+  ) {
+    this.curves.push(new FunctionCurve(fn, color, thickness));
     this.isDirty = true;
   }
 

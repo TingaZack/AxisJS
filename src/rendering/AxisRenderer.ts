@@ -22,7 +22,6 @@ export class AxisRenderer {
     }
     ctx.stroke();
 
-    // Helper function to draw an arrow
     const drawArrow = (x: number, y: number, rotation: number) => {
       ctx.save();
       ctx.translate(x, y);
