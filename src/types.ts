@@ -12,6 +12,7 @@ export interface PlaneConfig {
   axisColor?: string;
   backgroundColor?: string;
   textStyle?: TextStyle;
+  autoFit?: boolean;
 }
 
 export interface RenderContext {

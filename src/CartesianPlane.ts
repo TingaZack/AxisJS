@@ -39,6 +39,10 @@ export class CartesianPlane {
   private fitStartOffsetY = 0;
   private fitTargetOffsetY = 0;
 
+  // --- AUTO-FIT STATE ---
+  private autoFit: boolean;
+  private fitScheduled = false;
+
   constructor(canvas: HTMLCanvasElement, config: PlaneConfig = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d")!;
@@ -56,6 +60,9 @@ export class CartesianPlane {
     this.gridRenderer = new GridRenderer();
     this.axisRenderer = new AxisRenderer();
     this.plotRenderer = new PlotRenderer();
+
+    // Defaults to true — set { autoFit: false } in config to opt out
+    this.autoFit = config.autoFit ?? true;
 
     this.inputController.onInteraction = () => {
       this.isAnimatingToFit = false;
@@ -86,6 +93,48 @@ export class CartesianPlane {
   }
 
   /**
+   * Collects coordinates from every currently plotted entity (points, line
+   * endpoints, polygon vertices) so auto-fit can compute a bounding box that
+   * covers everything on the plane at once. Curves are excluded since they
+   * represent infinite/unbounded functions with no natural bounding box.
+   */
+  private getAllCoords(): { x: number; y: number }[] {
+    const coords: { x: number; y: number }[] = this.points.map((p) => ({
+      x: p.x,
+      y: p.y,
+    }));
+
+    this.segments.forEach((s) => {
+      // Adjust field names if your LineSegment class stores them differently
+      coords.push({ x: s.x1, y: s.y1 }, { x: s.x2, y: s.y2 });
+    });
+
+    this.polygons.forEach((poly) => {
+      // Adjust field name if your Polygon class stores vertices differently
+      coords.push(...poly.points);
+    });
+
+    return coords;
+  }
+
+  /**
+   * Batches auto-fit triggers so multiple synchronous add*() calls (e.g. a
+   * loop adding 20 points) collapse into a single animateToFit() call
+   * instead of firing a competing animation per insert.
+   */
+  private scheduleAutoFit() {
+    if (!this.autoFit || this.fitScheduled) return;
+    this.fitScheduled = true;
+    queueMicrotask(() => {
+      this.fitScheduled = false;
+      const coords = this.getAllCoords();
+      if (coords.length > 0) {
+        this.animateToFit(coords);
+      }
+    });
+  }
+
+  /**
    * Computes the bounding coordinates of target metrics and glides the canvas layout
    * smoothly to encompass all targets with natural, responsive breathing space padding.
    *
@@ -96,7 +145,7 @@ export class CartesianPlane {
     coords?: { x: number; y: number }[],
     duration = 750,
   ): void {
-    const targetCoords = coords || this.points;
+    const targetCoords = coords || this.getAllCoords();
     if (!targetCoords || targetCoords.length === 0) return;
 
     let minX = Infinity,
@@ -167,11 +216,14 @@ export class CartesianPlane {
   ) {
     this.points.push(new Point(x, y, color, label, showGuides));
     this.isDirty = true;
+    this.scheduleAutoFit();
   }
 
   public addCurve(fn: (x: number) => number, color?: string) {
     this.curves.push(new FunctionCurve(fn, color));
     this.isDirty = true;
+    // Not included in scheduleAutoFit — curves are unbounded and have no
+    // meaningful bounding box to fit to.
   }
 
   public addLine(
@@ -184,6 +236,7 @@ export class CartesianPlane {
   ) {
     this.segments.push(new LineSegment(x1, y1, x2, y2, color, thickness));
     this.isDirty = true;
+    this.scheduleAutoFit();
   }
 
   public addPolygon(
@@ -194,6 +247,7 @@ export class CartesianPlane {
   ) {
     this.polygons.push(new Polygon(points, fillColor, strokeColor, thickness));
     this.isDirty = true;
+    this.scheduleAutoFit();
   }
 
   // --- RENDERING ENGINE ---
