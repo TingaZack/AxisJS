@@ -24,11 +24,13 @@ export class CartesianPlane {
   private isDirty = true;
   private animationFrameId: number | null = null;
 
+  // Data Layer Arrays
   private points: Point[] = [];
   private curves: FunctionCurve[] = [];
   private segments: LineSegment[] = [];
   private polygons: Polygon[] = [];
 
+  // Smooth Viewport Transition Mechanics
   private isAnimatingToFit = false;
   private fitStartTime = 0;
   private fitDuration = 0;
@@ -39,7 +41,7 @@ export class CartesianPlane {
   private fitStartOffsetY = 0;
   private fitTargetOffsetY = 0;
 
-  // --- AUTO-FIT STATE ---
+  // Auto-Fit State Management
   private autoFit: boolean;
   private fitScheduled = false;
 
@@ -65,6 +67,7 @@ export class CartesianPlane {
     this.autoFit = config.autoFit ?? true;
 
     this.inputController.onInteraction = () => {
+      // Intercept and break programmatic animations if the user manually pans or zooms
       this.isAnimatingToFit = false;
       this.isDirty = true;
     };
@@ -105,12 +108,10 @@ export class CartesianPlane {
     }));
 
     this.segments.forEach((s) => {
-      // Adjust field names if your LineSegment class stores them differently
       coords.push({ x: s.x1, y: s.y1 }, { x: s.x2, y: s.y2 });
     });
 
     this.polygons.forEach((poly) => {
-      // Adjust field name if your Polygon class stores vertices differently
       coords.push(...poly.points);
     });
 
@@ -118,14 +119,15 @@ export class CartesianPlane {
   }
 
   /**
-   * Batches auto-fit triggers so multiple synchronous add*() calls (e.g. a
-   * loop adding 20 points) collapse into a single animateToFit() call
-   * instead of firing a competing animation per insert.
+   * Batches auto-fit triggers safely across animation frames. This guarantees
+   * that the browser has fully completed its layout pass and computed CSS
+   * dimensions before the camera moves.
    */
   private scheduleAutoFit() {
     if (!this.autoFit || this.fitScheduled) return;
     this.fitScheduled = true;
-    queueMicrotask(() => {
+
+    requestAnimationFrame(() => {
       this.fitScheduled = false;
       const coords = this.getAllCoords();
       if (coords.length > 0) {
@@ -138,7 +140,7 @@ export class CartesianPlane {
    * Computes the bounding coordinates of target metrics and glides the canvas layout
    * smoothly to encompass all targets with natural, responsive breathing space padding.
    *
-   * @param coords Optional custom point arrays. Defaults to all internal plotted points.
+   * @param coords Optional custom point arrays. Defaults to all internal plotted entities.
    * @param duration Transition runtime in milliseconds. Defaults to 750ms.
    */
   public animateToFit(
@@ -147,6 +149,21 @@ export class CartesianPlane {
   ): void {
     const targetCoords = coords || this.getAllCoords();
     if (!targetCoords || targetCoords.length === 0) return;
+
+    const canvasWidth = this.canvas.clientWidth;
+    const canvasHeight = this.canvas.clientHeight;
+
+    // If app is launching cold and layout dims are 0, defer to next paint frame
+    if (canvasWidth === 0 || canvasHeight === 0) {
+      if (!this.fitScheduled) {
+        this.fitScheduled = true;
+        requestAnimationFrame(() => {
+          this.fitScheduled = false;
+          this.animateToFit(targetCoords, duration);
+        });
+      }
+      return;
+    }
 
     let minX = Infinity,
       maxX = -Infinity;
@@ -160,7 +177,7 @@ export class CartesianPlane {
       maxY = Math.max(maxY, p.y);
     });
 
-    // Provide default dimension boundaries if processing a singular coordinate node
+    // Provide safe dimension boundaries if processing a singular coordinate node
     if (minX === maxX) {
       minX -= 4;
       maxX += 4;
@@ -172,9 +189,6 @@ export class CartesianPlane {
 
     const worldWidth = maxX - minX;
     const worldHeight = maxY - minY;
-
-    const canvasWidth = this.canvas.clientWidth;
-    const canvasHeight = this.canvas.clientHeight;
 
     // Define structural safety margins (22.5% uniform inner window padding offset)
     const paddingMultiplier = 0.225;
@@ -222,8 +236,7 @@ export class CartesianPlane {
   public addCurve(fn: (x: number) => number, color?: string) {
     this.curves.push(new FunctionCurve(fn, color));
     this.isDirty = true;
-    // Not included in scheduleAutoFit — curves are unbounded and have no
-    // meaningful bounding box to fit to.
+    // Curves represent infinite functions and don't trigger auto-fit bounds
   }
 
   public addLine(
@@ -256,7 +269,6 @@ export class CartesianPlane {
     const renderContext = {
       ctx: this.ctx,
       viewport: this.viewport,
-      // Pass logical dimensions, not physical pixel dimensions
       canvasWidth: this.canvas.clientWidth,
       canvasHeight: this.canvas.clientHeight,
     };
@@ -271,7 +283,7 @@ export class CartesianPlane {
     const majorStep = this.scaleManager.getOptimalStep(this.viewport.scale);
     const minorStep = this.scaleManager.getMinorStep(majorStep);
 
-    // Draw base layers
+    // Draw base grid layers
     this.gridRenderer.draw(renderContext, majorStep, minorStep);
     this.axisRenderer.draw(renderContext, majorStep);
 
@@ -327,7 +339,6 @@ export class CartesianPlane {
 
   public destroy() {
     if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
-    // Prevent memory leaks when component unmounts
     this.inputController.destroy();
   }
 }
